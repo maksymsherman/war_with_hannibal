@@ -33,8 +33,10 @@ In scope:
 - Four entity classes: `place`, `person`, `polity`, `force`.
 - Event timeline per chapter with deterministic event IDs.
 - Scene stepper (Prev/Next) + optional auto-sync by scroll.
+- Scene Delta Intelligence: compact "What changed" summary on each scene transition.
 - Clickable text annotations that pan/highlight map and open entity cards.
 - Force markers, route polylines, battle areas, and place highlights.
+- Contextual Military Glossary: inline definitions for key historical/military terms.
 - Confidence and citation display for interpretive claims.
 - Stable deep links for chapter/block/event/scene.
 - Mobile reader-first layout with map drawer.
@@ -469,11 +471,13 @@ Mobile:
 ### 10.2 Reader Behavior
 - stable block anchors for deep links
 - inline annotation highlights
+- inline glossary hints for tagged terms (hover/focus/tap)
 - event stepper visible and keyboard operable
 - optional distraction-free reading mode
 
 ### 10.3 Map Behavior
 - map reflects active event in auto mode
+- map header shows a minimal "What changed" summary for active scene
 - reset control restores canonical viewport for active scene
 - map lock prevents scroll-driven camera changes
 - entity card includes: name, type, role in current event, confidence, sources
@@ -542,6 +546,17 @@ if (sceneChanged(scene) && movedBeyondHysteresis(scrollTop)) {
 - user-initiated annotation jump: ~700-900ms
 - respect `prefers-reduced-motion`
 - expose animation speed controls in Launch+1
+
+### 11.5 Simplicity-First Assist Features
+Scene Delta Intelligence:
+- Compare current scene against previous scene and render up to 3 concise changes.
+- Use plain labels only: `Moved`, `Now Focused`, `New/Removed Force`.
+- Keep interaction optional and non-modal so reading flow is never blocked.
+
+Contextual Military Glossary:
+- Maintain a curated list of core terms used in Book 21 (small, quality-first set).
+- Show one-sentence definitions inline on hover/focus/tap with keyboard support.
+- Provide optional "More context" link to glossary page; no forced panel switching.
 
 ## 12) Deep Linking and Navigation Contracts
 
@@ -650,6 +665,8 @@ A chapter fails release if any rule fails:
 11. deep link restoration pass
 12. accessibility audit baseline pass
 13. performance budgets pass
+14. scene delta summaries match scene-layer diffs on tested transitions
+15. glossary hints resolve for tagged core terms and are keyboard accessible
 
 ## 17) CI Commands and Pipeline
 
@@ -763,8 +780,10 @@ Pilot completion criteria:
 2. Implement `ingest:book21` with deterministic split, footnote extraction, and stable IDs.
 3. Generate canonical chapter JSON for 21.5.
 4. Author 21.5 events and scenes using pilot blueprint.
-5. Build and run QA gates end-to-end.
-6. Extend to 21.6 and lock reusable editorial workflow.
+5. Implement minimal scene delta summaries for stepper and scroll transitions.
+6. Add core glossary term tags and inline definitions for pilot chapters.
+7. Build and run QA gates end-to-end.
+8. Extend to 21.6 and lock reusable editorial workflow.
 
 ## 24) Definition of Done
 
