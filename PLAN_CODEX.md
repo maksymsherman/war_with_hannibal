@@ -1,637 +1,322 @@
-# War With Hannibal — Interactive Map Reader (PLAN_CODEX.md)
+# War With Hannibal - V1 Execution Plan
 
-## 1) Strategic Intent
-Build the best practical digital companion for Livy's war narrative, starting with **Book 21**. The product must help readers answer spatial and tactical questions instantly while preserving scholarly trust through explicit sourcing and uncertainty.
+## 1) Product Goal
+Build a reading companion for Livy Book 21 where users can understand who is where, who moved, and why it matters without opening external maps.
 
-This is a reading product first and a map product second:
-- The map exists to explain the text.
-- The text flow must remain stable and readable.
-- Historical ambiguity is shown, not hidden.
+Primary user promise:
+- While reading any passage, users can immediately see the relevant geography.
+- Users can track movements and actions of all major actors, not only Hannibal.
+- Users can distinguish secure facts from uncertain reconstructions.
 
-## 2) Vision, Product Principles, and Non-Goals
+## 2) V1 Scope
+In scope:
+- Livy Book 21 only.
+- Chapter reader with synchronized map context.
+- Entity linking for places, people, groups/polities, and military forces.
+- Scene steps for major narrative events (movement, siege, battle, diplomacy).
+- Source and confidence on map-assertive claims.
+- Mobile support with reader-first behavior.
 
-### Vision
-When a reader sees "Hannibal moved from X to Y," they should immediately understand:
-- where X and Y are,
-- how the move likely happened,
-- what constraints mattered (river, pass, season),
-- how certain or disputed the reconstruction is,
-- and what sources support the claim.
-
-### Product principles
-- Reading-first UX: text clarity wins when map and text conflict.
-- Canonical content model: chapter-level stable IDs survive reformatting.
-- Explicit provenance: map-assertive claims require citations and confidence.
-- Fast by default: first readable text is independent of map load.
-- Honest uncertainty: no fake precision.
-
-### Non-goals (v1)
-- Not a total war simulator.
-- No multiplayer, comments, or public editing.
-- No attempt to resolve all scholarly disputes.
-- No mandatory account system.
-
-## 3) What Success Looks Like
-
-### Reader outcomes
-- Readers can follow Book 21 without getting lost geographically.
-- Readers can click places/people/forces and immediately get context.
-- Scene transitions feel predictable and non-jarring.
-
-### Editorial outcomes
-- New chapter onboarding is repeatable: ingest -> annotate -> scene -> validate -> publish.
-- Editors can review every claim with confidence metadata and citations.
-
-### System outcomes
-- Stable deep links remain valid across content revisions.
-- Data errors are caught in CI before deployment.
-- Map assets load progressively and do not block reading.
-
-## 4) Audience and Use Cases
-
-### Primary audience: general history readers
-Jobs to be done:
-- "Show me where this happened."
-- "Help me follow army movement without opening a separate atlas."
-
-### Secondary audience: students and teachers
-Jobs to be done:
-- "Step through a chapter in class with clear visuals."
-- "Share a link to a claim with source context."
-
-### Tertiary audience: digital humanists
-Jobs to be done:
-- "Inspect data structure and provenance."
-- "Reuse model for other historical texts."
-
-## 5) Scope and Release Shape
-
-### MVP (v1)
-- Book 21 only.
-- Chapter reader + synchronized map scenes.
-- Clickable place/person/force annotations.
-- Force markers and route overlays with uncertainty styling.
-- Source/citation display for non-trivial assertions.
-- Mobile-compatible reader/map interaction.
-
-### v1.5
-- Cross-chapter entity index for Book 21.
-- Better scene editing ergonomics.
-- Optional present mode improvements.
-
-### v2
-- Books 22-30.
-- Optional user accounts (bookmarks/progress sync).
+Out of scope for v1:
+- Accounts, comments, public editing.
+- Full editor UI.
 - Community contribution workflow.
+- Character portraits and advanced battle diagrams.
+- Books 22-30.
 
-## 6) Licensing and Text Strategy
+## 3) User-Centered Requirements (Must Ship)
+1. Read text comfortably on desktop and mobile.
+2. Tap/click any annotated mention and see map focus + context card.
+3. Step through narrative events with clear map changes.
+4. See all relevant actors in each event (Roman, Carthaginian, allied, local groups).
+5. See confidence and sources whenever the map reflects interpretation.
+6. Continue reading even if map fails to load.
 
-### Text licensing
-- Use a **public-domain English translation** for v1 publication.
-- Store source metadata per chapter: translator, edition year, URL/source.
-- Keep text layer swappable so future translations can reuse canonical annotations/scenes.
+## 4) Success Criteria
+A new user can complete one chapter and correctly explain:
+- Which actors are involved.
+- Where key events occur.
+- What moved between locations.
+- Which points are disputed or uncertain.
 
-### Companion mode (future)
-- If using copyrighted translations later, support a companion mode that references locations/sections without reproducing copyrighted full text.
+Operational targets:
+- First readable text in under 2 seconds on a good connection.
+- No broken deep links after data-only updates.
+- All shipped scenes have source and confidence fields.
 
-### Map and data licensing
-- Natural Earth (public domain) for physical geography baseline.
-- OpenStreetMap-derived data only where licensing obligations are met.
-- Pleiades alignment when useful for authority IDs.
-- Attribution manifest generated at build time.
+## 5) Canonical Content Model (Minimal but Sufficient)
 
-## 7) Information Architecture (Canonical-First)
+### 5.1 Chapter unit
+Each chapter is canonical and stored as:
+- `source`
+- `blocks`
+- `annotations`
+- `events`
+- `scenes`
 
-The core architectural decision is unchanged and remains correct: **canonical data is chapter-based with stable block IDs**.
-
-### 7.1 Canonical entities
-- Place
-- Person
-- Force
-
-Required properties by type:
-- Place: `place_id`, `display_name`, `alt_names`, geometry, confidence, sources.
-- Person: `person_id`, names, roles, faction, optional dates, sources.
-- Force: `force_id`, faction, commander links, optional size/composition, sources.
-
-### 7.2 Chapter as canonical unit
-Each chapter file contains:
-- `blocks`: stable narrative units.
-- `annotations`: references from block selectors to entities.
-- `scenes`: ordered map states tied to narrative moments.
-
-### 7.3 Presentation mapping
-`Book.Chapter.Section` is a view layer, not canonical storage:
-- mapping files group block IDs into display sections.
-- section boundaries can change without breaking annotations.
-
-### 7.4 ID and version policy
-- Book/chapter: `21.05`
-- Block: `21.05.p01`
-- Annotation: `21.05.a12`
-- Scene: `21.05.s03`
+### 5.2 Stable IDs
+- Chapter: `21.05`
+- Block: `21.05.b03`
+- Annotation: `21.05.a14`
+- Event: `21.05.e04`
+- Scene: `21.05.s04`
 
 Rules:
-- IDs never recycled.
-- Data package semantic versioning.
-- Breaking changes only when IDs or schemas break compatibility.
-- Changelog required for location/route hypothesis changes.
+- IDs are never recycled.
+- New IDs are appended when splitting/adding blocks.
+- Historical interpretation changes require changelog notes.
 
-## 8) Data Model (Detailed)
+### 5.3 Entities (v1)
+Use four entity types:
+- `place`
+- `person`
+- `polity` (tribe, city-state, people, confederation, senate/body politic)
+- `force` (army/detachment/fleet)
 
-### 8.1 Chapter schema (conceptual)
-```json
-{
-  "chapter_id": "21.05",
-  "source": {
-    "translation_id": "roberts-1912",
-    "title": "The History of Rome",
-    "translator": "Canon Roberts",
-    "year": 1912,
-    "license": "public-domain",
-    "url": "..."
-  },
-  "blocks": [
-    {
-      "block_id": "21.05.p01",
-      "text": "..."
-    }
-  ],
-  "annotations": [
-    {
-      "annotation_id": "21.05.a04",
-      "anchor": {
-        "block_id": "21.05.p01",
-        "selector": {
-          "quote": "Saguntum",
-          "startOffset": 123,
-          "endOffset": 131
-        }
-      },
-      "entity": {
-        "type": "place",
-        "id": "saguntum"
-      },
-      "confidence": "high",
-      "sources": [
-        "Livy 21.5",
-        "Pleiades 246637"
-      ],
-      "note": "Widely accepted site near modern Sagunto."
-    }
-  ],
-  "scenes": [
-    {
-      "scene_id": "21.05.s02",
-      "anchor": {
-        "block_id": "21.05.p03"
-      },
-      "viewport": {
-        "lng": 1.1,
-        "lat": 41.0,
-        "zoom": 5.8,
-        "bearing": 0,
-        "pitch": 0
-      },
-      "layers": [
-        {
-          "type": "highlight_place",
-          "place_id": "saguntum",
-          "confidence": "high",
-          "sources": ["Livy 21.5"]
-        }
-      ],
-      "narrative_note": "Roman and Carthaginian strategic focus converges on Saguntum."
-    }
-  ]
-}
-```
+Why this is required:
+- Book 21 frequently names peoples/groups (example: Olcades, Vaccaei, Carpetani) that are not cleanly place/person/force.
 
-### 8.2 Scene layer vocabulary (opinionated minimal set)
+### 5.4 Event model
+`events` are narrative beats users step through.
+Each event should include:
+- `event_id`
+- `block_ids` (one or more)
+- `title`
+- `summary`
+- `actors` (entity references)
+- `event_type` (`movement|battle|siege|diplomacy|logistics|political|other`)
+- `sources`
+- optional `time_note`
+
+### 5.5 Scene model
+Each event may have one primary scene.
+A scene includes:
+- `scene_id`
+- `event_id`
+- `anchor_block_id`
+- `viewport`
+- `layers`
+
+Layer types (v1):
 - `highlight_place`
-- `force_marker`
 - `route`
+- `force_marker`
 - `battle_area`
 - `label`
-- `note`
 
-All non-trivial layers include:
-- `confidence`: `high|medium|low`
-- `sources`: citation array
+All non-trivial layers must include:
+- `confidence` (`high|medium|low`)
+- `sources`
 - optional `note`
 
-### 8.3 View mapping schema
-```json
-{
-  "chapter_id": "21.05",
-  "sections": [
-    {
-      "label": "21.5.1",
-      "block_ids": ["21.05.p01", "21.05.p02"]
-    }
-  ]
-}
-```
+## 6) Text and Anchor Strategy
 
-### 8.4 Gazetteer structure
-- `data/gazetteer/places.geojson`
-- `data/gazetteer/people.json`
-- `data/gazetteer/forces.json`
+### 6.1 Translation policy
+Use one public-domain English translation for v1 publication, with full metadata:
+- `translation_id`
+- `title`
+- `translators` (array, not single value)
+- `edition_or_release`
+- `license`
+- `url`
+- `retrieved_at`
 
-Recommended place properties:
+Initial source to use now:
+- Project Gutenberg eBook #10907 (`https://www.gutenberg.org/ebooks/10907`)
+
+### 6.2 Blocking policy
+Do not use raw paragraph as the only block strategy.
+Use narrative beats:
+- target 80-220 words per block,
+- split long paragraphs at clear event pivots,
+- preserve chapter order and reference mapping.
+
+### 6.3 Anchoring policy
+Avoid offset-only anchors.
+Use resilient anchors:
+- primary: `block_id` + normalized quote snippet,
+- secondary: token window checksum,
+- optional offsets for rendering optimization only.
+
+Rationale:
+- offsets break across text revisions and translation swaps.
+
+## 7) Map Data Strategy (Practical)
+
+### 7.1 Basemap
+- Ancient-friendly physical map style.
+- No default modern political borders.
+- Modern reference labels optional in entity cards/toggle.
+
+### 7.2 Gazetteer requirements
+`places.geojson` place entries must support uncertainty:
 - `place_id`
 - `display_name`
 - `alt_names`
-- `authority_refs` (e.g., Pleiades)
+- `authority_refs` (Pleiades etc.)
+- `geometry_candidates` (one or many)
+- `preferred_geometry_index`
 - `confidence`
 - `sources`
 - `editorial_note`
 
-## 9) Editorial Standards and Workflow
+### 7.3 Routes and uncertain geography
+For disputed routes/locations:
+- store alternative hypotheses explicitly,
+- render alternatives with reduced emphasis,
+- explain basis in scene notes.
 
-### 9.1 Editorial conventions (must exist before scaling)
-Define and publish:
-- naming and transliteration style,
-- citation format,
-- confidence criteria,
-- scene granularity rules,
-- ambiguous toponym handling.
+## 8) Reader and Map Experience
 
-### 9.2 Manual-first pipeline (v1)
-1. Ingest chapter text to canonical blocks.
-2. Annotate place mentions, then people, then forces.
-3. Create scenes at narrative pivots.
-4. Add confidence and sources for map assertions.
-5. Validate and review.
+### 8.1 Desktop
+- Split view, reader prioritized.
+- Sticky event controls.
+- Active event badge visible at all times.
 
-### 9.3 Internal editor (v1.5)
-Build behind dev flag:
-- text span annotation tool,
-- entity picker with fuzzy search,
-- map-driven scene builder,
-- viewport capture,
-- route drawing and editing,
-- PR-friendly change summary.
+### 8.2 Mobile
+- Reader-first with expandable map sheet.
+- Event controls remain thumb-reachable.
+- Map defaults to current event focus when opened.
 
-### 9.4 Review checklist per chapter
-- Coverage: major places and actors annotated.
-- Every scene claim has source and confidence.
-- No dangling IDs.
-- No unexplained speculative geometry.
-- Mobile and accessibility pass completed.
+### 8.3 Interaction contract
+- Click annotation -> focus map and open entity card.
+- Click event step -> scroll to event blocks and update map scene.
+- Reset -> canonical scene viewport.
+- If map fails -> show event summaries and linked place cards in text-only mode.
 
-## 10) Historical Map Strategy
+## 9) Sync Behavior (Simple for v1)
+Use only two modes:
+- `auto` (default)
+- `manual`
 
-### 10.1 Basemap intent
-Use an ancient-friendly physical map that avoids modern political and urban clutter.
+Auto mode rules:
+- Active event updates when its anchor block crosses upper viewport threshold.
+- Debounce scroll updates.
+- User map interactions pause auto updates briefly.
 
-### 10.2 Data strategy
-- Base: Natural Earth physical layers.
-- Curated overlays: ancient places/routes relevant to Book 21.
-- Historical corrections (iterative):
-  - Po delta/coastal context where materially relevant.
-  - Alpine pass emphasis where routes are debated.
-  - Key river crossings and strategic corridors.
+Manual mode rules:
+- Event controls drive scene changes.
+- Scroll does not alter active scene unless user re-enables auto.
 
-### 10.3 Rendering stack
-- Map engine: MapLibre GL JS.
-- Tile packaging: PMTiles.
-- Hosting: static CDN with HTTP range requests.
+## 10) Editorial Workflow (Manual-First)
+Per chapter workflow:
+1. Ingest chapter text and split into narrative blocks.
+2. Annotate places, people, polities, forces.
+3. Define events and actor participation.
+4. Build one scene per event (plus optional secondary scenes).
+5. Add confidence and sources for all interpretive map layers.
+6. Run validation and chapter QA checklist.
+7. Publish.
 
-### 10.4 Label strategy
-- Default labels from project gazetteer only.
-- Optional modern reference hints in cards or toggle.
-- No modern country borders in default style.
+## 11) QA Gates (Ship Blockers)
+A chapter cannot ship unless all checks pass:
+1. No dangling entity references.
+2. All events have at least one actor.
+3. All event-linked scenes resolve.
+4. All non-trivial layers include confidence + sources.
+5. All disputed geographies are flagged.
+6. Annotation and event controls are keyboard accessible.
+7. Mobile smoke test passes.
+8. Text-only fallback is functional.
 
-### 10.5 Zoom strategy
-- 0-3: basin overview.
-- 4-6: regional campaigns.
-- 7-10: battle corridor and pass detail.
-
-## 11) Reader Experience and Interaction Design
-
-### 11.1 Desktop layout
-- Split reader/map.
-- Reader remains primary focus width.
-- Scene controls and sync status always visible.
-
-### 11.2 Mobile layout
-- Reader-first layout with map drawer/sheet.
-- Map can be expanded for investigation, collapsed for reading continuity.
-- Scene controls remain reachable without precision tapping.
-
-### 11.3 Core interactions
-- Click text annotation -> map highlight + entity card.
-- Click scene step -> synchronized text anchor and map transition.
-- Reset view returns to canonical scene viewport.
-- Present mode enlarges map + large controls for teaching.
-
-### 11.4 Accessibility and motion
-- Keyboard support for scene stepping and entity focus.
-- Screen-reader labels for annotations and map alternatives.
-- `prefers-reduced-motion` disables large animations.
-
-## 12) Reader-Map Sync Engine (Detailed)
-
-### 12.1 Sync modes
-- Auto-sync (default)
-- Manual scene mode
-- Annotation-only sync
-- Sync disabled
-
-### 12.2 Activation rules
-- Scene becomes candidate when its anchor crosses top third of viewport.
-- Hysteresis threshold prevents rapid oscillation.
-- Debounce rapid scrolling.
-- User interaction interrupts auto animation immediately.
-
-### 12.3 Practical defaults
-- Scene switch threshold: ~120-180px
-- Scroll debounce: ~250-350ms
-- Scene transition duration: 800-1200ms depending on trigger
-
-### 12.4 State model
-Single shared store (e.g., Zustand):
-- reading state: chapter, block, scroll position
-- map state: active scene, viewport, animation status
-- sync prefs: mode, speed, pause
-
-### 12.5 Deep linking
-- `#block=21.05.p03`
-- `#scene=21.05.s02`
-- `?ref=21.5.3` resolved via view mapping
-
-Deep links restore both text and map state.
-
-## 13) Visual Storytelling System
-
-These additions materially improve comprehension and engagement when implemented with strict quality controls.
-
-### 13.1 Timeline ribbon (v1)
-- show consular year and campaign season,
-- show concrete dates only when confidence supports it,
-- visually mark uncertainty.
-
-### 13.2 Battle sequence diagrams (v1 for major engagements)
-- 3-5 step schematic overlays for key battles in covered books,
-- concise tactical explanation per step,
-- explicit source basis and uncertainty.
-
-### 13.3 Army composition visuals (v1.5)
-- force cards include composition ranges and role summaries,
-- diagrams clarify terms like legions, cavalry mix, elephants.
-
-### 13.4 Character portrait system (v2 path)
-- do not block v1 on commissioned art,
-- support portraits where rights and historical basis are clear,
-- include attribution and provenance metadata.
-
-### 13.5 Asset policy
-- SVG for diagrams.
-- WebP/PNG for portraits.
-- Lazy load all non-critical assets.
-- Keep attribution data machine-readable.
-
-## 14) Cross-Referencing, Search, and Reading Progress
-
-### 14.1 Entity-centric navigation
-- Entity pages aggregate mentions, scenes, and related references.
-- "See also" links help readers jump to connected passages.
-
-### 14.2 Cross-reference graph (v1.5)
-- Precomputed links:
-  - temporal (earlier/later mentions),
-  - spatial (nearby/co-located events),
-  - thematic (related tactical/political contexts).
-
-### 14.3 Search
-- by place/person/force name,
-- by chapter/section ref,
-- by source citation.
-
-### 14.4 Progress and bookmarks
-- v1: local storage resume state.
-- v2: optional account sync for bookmarks/notes.
-- preserve reader + map state in resume snapshot.
-
-## 15) Technical Architecture
-
-### 15.1 Stack
+## 12) Technical Architecture
+Stack:
 - Next.js + TypeScript
 - MapLibre GL JS
-- PMTiles
-- shared state store (Zustand or equivalent)
-- schema validation (Zod or JSON Schema)
+- PMTiles (or static GeoJSON for earliest pilot)
+- Zod for schema validation
+- Zustand (or equivalent) shared UI state
 
-### 15.2 Project structure (target)
+Target structure:
 ```text
 /data
   /books/21/chapters/*.json
   /books/21/views/default/*.json
   /gazetteer/places.geojson
   /gazetteer/people.json
+  /gazetteer/polities.json
   /gazetteer/forces.json
 /public
   /tiles/war-with-hannibal.pmtiles
-  /visual-assets/...
 /scripts
-  ingest/
-  validate/
-  compile/
+  /ingest
+  /validate
+  /compile
 /src
-  app/
-  components/
-  lib/
+  /app
+  /components
+  /lib
 ```
 
-### 15.3 Architecture constraints
+Constraints:
 - Static-first delivery.
-- Data-driven scene rendering.
 - Build fails on invalid content.
-- No runtime dependence on fragile ad-hoc parsing.
+- Data-driven rendering only.
 
-## 16) Data Compilation Pipeline
+## 13) Implementation Roadmap
 
-At build time:
-1. Validate schemas.
-2. Validate cross-references.
-3. Validate geospatial bounds and geometry sanity.
-4. Build chapter/entity indexes.
-5. Precompute route lengths and scene bounds.
-6. Emit optimized per-chapter bundles.
-7. Generate attribution manifest and data changelog.
+### Phase 0 (Week 1): Foundations
+Deliverables:
+- Freeze schemas for chapter/entities/events/scenes.
+- Lock translation metadata model (`translators` array).
+- Build minimal reader + map shell.
+- Implement text-only fallback state.
 
-Optional derived outputs:
-- search index,
-- entity mention index,
-- scene timeline index.
+Exit criteria:
+- App loads one stub chapter with one stub scene.
 
-## 17) Testing and Quality Gates
+### Phase 1 (Weeks 2-3): One Complete Pilot Chapter
+Deliverables:
+- Ingest one Book 21 chapter end to end.
+- Full annotation for places/people/polities/forces.
+- Event timeline and scene stepping.
+- Confidence/source UI.
+- Validation scripts for schema + reference integrity.
 
-### 17.1 Unit tests
-- schema validators,
-- id and reference checks,
-- route/distance calculations,
-- view mapping resolvers.
+Exit criteria:
+- User can read and map-follow the chapter without external atlas.
 
-### 17.2 Integration tests
-- chapter render with annotations,
-- scene -> map layer derivation,
-- deep-link restore behavior.
+### Phase 2 (Weeks 4-5): Core Book 21 Pipeline
+Deliverables:
+- Repeatable chapter onboarding scripts/workflow.
+- Deep links for block, event, and scene.
+- Performance pass (bundle size, map init, interaction latency).
+- Accessibility pass (keyboard, labels, reduced motion).
 
-### 17.3 E2E tests (Playwright)
-- open chapter,
-- click annotation and assert map update,
-- step scenes and verify layer changes,
-- load deep-link URL and verify restored state.
+Exit criteria:
+- Multiple chapters shipped with consistent QA results.
 
-### 17.4 Content QA gates
-A chapter cannot ship unless:
-- all referenced entities exist,
-- all non-trivial scene layers include confidence/sources,
-- required accessibility labels exist,
-- mobile layout smoke test passes.
+### Phase 3 (Week 6+): Completion and Hardening
+Deliverables:
+- Remaining Book 21 chapters.
+- Regression test suite (unit + integration + E2E smoke).
+- Changelog discipline for interpretation updates.
 
-## 18) Performance Budgets and Reliability
+Exit criteria:
+- Book 21 complete and stable for public release.
 
-### 18.1 Performance budgets
-- first readable text: <2s on good connection,
-- map initialization: progressive, non-blocking,
-- scene transition frame rate: target 60fps, floor 30fps,
-- chapter payload budget enforced by CI.
+## 14) Metrics to Track
+Product metrics:
+- Event step usage rate.
+- Annotation click-through rate.
+- Chapter completion rate.
+- Drop-off by chapter and event index.
 
-### 18.2 Reliability
-- robust fallback when map fails to initialize,
-- deterministic scene state from URL,
-- error boundaries around map and card subsystems.
+Quality metrics:
+- Validation failures per chapter PR.
+- Map load error rate.
+- Text-only fallback usage rate.
 
-### 18.3 Observability
-Track:
-- chapter completion,
-- annotation click-through,
-- scene navigation usage,
-- error rates by route/component.
+## 15) Immediate Next Actions
+1. Freeze schema files for chapter, entities, events, and scenes.
+2. Convert one real chapter (recommend 21.5 or 21.6) into narrative blocks.
+3. Produce first actor-complete event map for that chapter.
+4. Run QA gates and tune UX based on observed friction.
+5. Scale chapter by chapter through Book 21.
 
-## 19) Chapter Delivery Strategy (Pragmatic)
-
-### 19.1 Pilot-first sequence
-Start with a small high-value subset of Book 21 chapters that stress core capabilities:
-- one chapter centered on long-range movement (Iberia -> Gaul corridor),
-- one chapter centered on Alpine crossing uncertainty,
-- one chapter centered on first major Italian engagements.
-
-Then complete remaining chapters in order.
-
-### 19.2 Chapter completion criteria
-- >=90% meaningful place mentions annotated.
-- all principal figures annotated.
-- all major movement events have scenes.
-- disputed geographies explicitly flagged.
-
-### 19.3 Release cadence
-- weekly or biweekly chapter drops,
-- each release includes fixes + one measurable quality improvement.
-
-## 20) Feedback and Iteration Workflow
-
-### 20.1 Feedback channels
-- inline error report links,
-- chapter-level survey after completion,
-- usage analytics for friction detection.
-
-### 20.2 Triage policy
-- factual/data errors: hotfix target <=48h
-- UX clarity issues: next patch
-- feature requests: roadmap queue by impact
-
-### 20.3 Versioning
-- app version and data package version both visible.
-- changelog entries for historical interpretation changes.
-
-## 21) Deployment and Operations
-
-### 21.1 Hosting
-- static-capable frontend host (Vercel/Netlify/Cloudflare Pages).
-- PMTiles and large assets served via CDN.
-
-### 21.2 Delivery requirements
-- HTTP range requests enabled for PMTiles.
-- strong caching with content-hash invalidation.
-- preview deployments for editorial QA.
-
-### 21.3 Security and governance
-- no secrets in client bundles,
-- content-only PR permissions for editors where possible,
-- signed release tags for reproducibility.
-
-## 22) Growth and Distribution (Post-MVP)
-
-### 22.1 Launch channels
-- history and digital-humanities communities,
-- technical communities interested in mapping + data journalism,
-- educator outreach with present-mode examples.
-
-### 22.2 SEO and discoverability
-- static chapter pages,
-- place/person pages as entry points,
-- rich metadata for share previews.
-
-### 22.3 Contribution model (v2)
-- contribution guidelines for data edits,
-- review rubric for uncertain claims,
-- templates for source citations and route hypotheses.
-
-## 23) Risk Register and Mitigations
-
-- Text rights risk -> public-domain text first, companion mode later.
-- Geographic dispute risk -> confidence + citations + explicit alternatives.
-- Scope creep risk -> Book 21 gate, chapter completion criteria.
-- Performance risk -> static-first, PMTiles, strict budgets.
-- Editorial inconsistency risk -> style guide + review checklist + CI validation.
-- Mobile complexity risk -> reader-first drawer model and device testing.
-
-## 24) Milestones
-
-### Phase 0: Foundations (1-2 weeks)
-- repo setup,
-- schema scaffolding,
-- reader skeleton,
-- map pane with sample data.
-
-### Phase 1: Core MVP (3-6 weeks)
-- ingest and model Book 21,
-- gazetteer baseline,
-- annotation pipeline,
-- scene system,
-- source/confidence UI.
-
-### Phase 2: Quality and Usability (2-4 weeks)
-- sync refinements,
-- accessibility pass,
-- performance tuning,
-- validation and E2E hardening.
-
-### Phase 3: Editorial Leverage (2-4 weeks)
-- dev-only annotation/scene editor,
-- release checklist automation,
-- cross-reference index.
-
-### Phase 4: Expansion (ongoing)
-- Books 22-30,
-- optional accounts,
-- contribution workflow,
-- advanced visuals.
-
-## 25) Immediate Next Actions
-1. Lock translation source and record source metadata schema.
-2. Freeze chapter/annotation/scene schemas and ID policy.
-3. Build one full pilot chapter from ingestion to publish with all gates on.
-4. Measure reader flow and tune sync thresholds.
-5. Scale to full Book 21 with chapter release cadence.
-
-## 26) Explicit v1 Defaults
-- Text blocks are paragraph-based stable units.
-- All map labels come from project gazetteer/scenes.
-- Every map-assertive layer includes confidence + sources.
-- Reader remains usable even if map fails.
-- Historical honesty overrides visual spectacle.
+## 16) v1 Decision Log (Hard Rules)
+- The product is reading-first.
+- All major actors are represented, not only Hannibal.
+- Event-level mapping is the primary comprehension tool.
+- Uncertainty is shown explicitly, never hidden.
+- Shipping a smaller, reliable v1 is preferred over feature breadth.
